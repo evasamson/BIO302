@@ -14,12 +14,14 @@ The paper I chose is  "From individual to population level: Temperature and snow
 There are several factors evaluated (like productivity of the geese) but the main result I will try to reproduce is the relationship of the first laid egg with the predictors winter temperature and snow depth as well as the relationship between the length of the egg-laying window and the number of breeding pairs. These are presented in figure 3 and table 1 in the original paper. 
 
 ```{r}
+#| label: read data
 library(tidyverse)
 
 geese_data <- readxl::read_xlsx(here::here("Frigerio_Sumasgutner_et_al_Sci_Rep_Supporting_Data.xlsx"), sheet = 2) |> janitor::clean_names()
 ```
 
 ```{r}
+#| label: model first egg vs. temperature
 mod_temp <- lm(first_egg ~ temp_winter, data = geese_data)
 performance::check_model(mod_temp)
 
@@ -30,8 +32,36 @@ broom::augment(mod_temp, interval = "confidence", level = 0.95) |>
   geom_line(aes(y = .fitted)) +
   labs(x = "Winter temperature [°C]", y = "1st egg laid") +
   theme_bw()
-  
 ```
+
+```{r}
+#| label: model first egg vs. snow depth
+mod_snow <- lm(first_egg ~ snow_average, data = geese_data)
+performance::check_model(mod_snow)
+
+broom::augment(mod_snow, interval = "confidence", level = 0.95) |> 
+  ggplot(aes(x = snow_average, y = first_egg)) +
+  geom_point() +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = .3) +
+  geom_line(aes(y = .fitted)) +
+  labs(x = "Annual snow depth [cm]", y = "1st egg laid") +
+  theme_bw()
+```
+
+```{r}
+#| label: model egg laying time window vs. number of breeding pairs
+mod_window <- lm(period ~ pairs, data = geese_data)
+performance::check_model(mod_window)
+
+broom::augment(mod_window, interval = "confidence", level = 0.95) |> 
+  ggplot(aes(x = pairs, y = period)) +
+  geom_point() +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = .3) +
+  geom_line(aes(y = .fitted)) +
+  labs(x = "Nb. breeding pairs", y = "Length egg laying time window") +
+  theme_bw()
+```
+
 
 Archive the code and text on GitHub and include the link to your repo in your answer here.
 
