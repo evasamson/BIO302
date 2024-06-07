@@ -9,14 +9,29 @@ format:
 
 ## Part A - reproducibility
 
-Choose a paper that:
-    -  interests you
-    -  claims to have open data
-    -  uses methods that you can use
+The paper I chose is  "From individual to population level: Temperature and snow cover modulate fledging success through breeding phenology in greylag geese (_Anser anser_)" (Frigerio, Didone et al. (2021). From individual to population level: Temperature and snow cover modulate fledging success through breeding phenology in Greylag geese (Anser anser) [Dataset]. Dryad. https://doi.org/10.5061/dryad.np5hqbztd)
 
-Identify the main result and try to reproduce it from the available data, the description of the methods, and other resources (if the paper has several main results, choose one). Spend no more than 2-3 hours on this (if it takes longer, the paper was not easy to reproduce!).
+There are several factors evaluated (like productivity of the geese) but the main result I will try to reproduce is the relationship of the first laid egg with the predictors winter temperature and snow depth as well as the relationship between the length of the egg-laying window and the number of breeding pairs. These are presented in figure 3 and table 1 in the original paper. 
 
-If you are trying to reproduce a figure, there is not need to match colour scales etc, just the scientific content.
+```{r}
+library(tidyverse)
+
+geese_data <- readxl::read_xlsx(here::here("Frigerio_Sumasgutner_et_al_Sci_Rep_Supporting_Data.xlsx"), sheet = 2) |> janitor::clean_names()
+```
+
+```{r}
+mod_temp <- lm(first_egg ~ temp_winter, data = geese_data)
+performance::check_model(mod_temp)
+
+broom::augment(mod_temp, interval = "confidence", level = 0.95) |> 
+  ggplot(aes(x = temp_winter, y = first_egg)) +
+  geom_point() +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = .3) +
+  geom_line(aes(y = .fitted)) +
+  labs(x = "Winter temperature [°C]", y = "1st egg laid") +
+  theme_bw()
+  
+```
 
 Archive the code and text on GitHub and include the link to your repo in your answer here.
 
