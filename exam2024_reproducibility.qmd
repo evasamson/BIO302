@@ -9,9 +9,10 @@ format:
 
 ## Part A - reproducibility
 
-The paper I chose is  "From individual to population level: Temperature and snow cover modulate fledging success through breeding phenology in greylag geese (_Anser anser_)" (Frigerio, Didone et al. (2021). From individual to population level: Temperature and snow cover modulate fledging success through breeding phenology in Greylag geese (Anser anser) [Dataset]. Dryad. https://doi.org/10.5061/dryad.np5hqbztd)
+The paper I chose is  a paper about fledging success in greylag geese (Frigerio, D., Sumasgutner, P., Kotrschal, K. et al. From individual to population level: Temperature and snow cover modulate fledging success through breeding phenology in greylag geese (Anser anser). Sci Rep 11, 16100 (2021). https://doi.org/10.1038/s41598-021-95011-9).
+The corresponding dataset can be found under https://doi.org/10.5061/dryad.np5hqbztd (Frigerio, Didone et al. (2021). From individual to population level: Temperature and snow cover modulate fledging success through breeding phenology in Greylag geese (Anser anser) [Dataset]. Dryad. https://doi.org/10.5061/dryad.np5hqbztd).
 
-There are several factors evaluated (like productivity of the geese) but the main result I will try to reproduce is the relationship of the first laid egg with the predictors winter temperature and snow depth as well as the relationship between the length of the egg-laying window and the number of breeding pairs. These are presented in figure 3 and table 1 in the original paper. 
+There are several factors evaluated (like productivity of the geese) but the main result I will try to reproduce is the relationship of the first laid egg with the predictors winter temperature and snow depth as well as the relationship between the length of the egg-laying window and the number of breeding pairs. These are presented in figure 3 in the original paper. 
 
 ```{r}
 #| label: read data
@@ -20,10 +21,12 @@ library(tidyverse)
 geese_data <- readxl::read_xlsx(here::here("Frigerio_Sumasgutner_et_al_Sci_Rep_Supporting_Data.xlsx"), sheet = 2) |> janitor::clean_names()
 ```
 
+Figure 3a
 ```{r}
 #| label: model first egg vs. temperature
 mod_temp <- lm(first_egg ~ temp_winter, data = geese_data)
 performance::check_model(mod_temp)
+# base::plot(mod_temp)
 
 broom::augment(mod_temp, interval = "confidence", level = 0.95) |> 
   ggplot(aes(x = temp_winter, y = first_egg)) +
@@ -34,6 +37,9 @@ broom::augment(mod_temp, interval = "confidence", level = 0.95) |>
   theme_bw()
 ```
 
+Frigerio, Didone et al. (2021) used the _plot_ function in the _base_-package to examine the models for normality and homogeneity of residuals. I also examined those plots but personally prefer the condensed display by the _performance_-package so I only included those as model diagnostics.
+
+Figure 3b
 ```{r}
 #| label: model first egg vs. snow depth
 mod_snow <- lm(first_egg ~ snow_average, data = geese_data)
@@ -48,6 +54,7 @@ broom::augment(mod_snow, interval = "confidence", level = 0.95) |>
   theme_bw()
 ```
 
+Figure 3c
 ```{r}
 #| label: model egg laying time window vs. number of breeding pairs
 mod_window <- lm(period ~ pairs, data = geese_data)
@@ -62,15 +69,15 @@ broom::augment(mod_window, interval = "confidence", level = 0.95) |>
   theme_bw()
 ```
 
+These models were chosen as main results by Frigerio, Didone et al. (2021) based on the AIC/AICc-values of all model candidates. Every model with a ΔAIC < 2 (difference to the best fit) was considered relevant and visually displayed.
 
-Archive the code and text on GitHub and include the link to your repo in your answer here.
-
--   Make at least two commits to git.
--   Cite the original paper and data.
--   Make your reproduction as reproducible as possible (i.e. it should be possible for me to reproduce your work after cloning your repo and downloading the data).
+-   include the link to your repo in your answer here.
 
 1.  Discuss how well you managed to reproduce the part of paper you were working on and what challenges you faced.
+Firstly, finding a paper that is both open-access (or accessible for me through UiB) and provides a complete dataset, was a challenge in itself. Many papers don't provide data at all and when I found datasets that seemed interesting, the corresponding paper was often behind a paywall. 
+After I found the paper I chose to reproduce, the figures of the main results were reproducible very well. The data didn't require any cleaning and fitting the models with the given parameters resulted in the figures also shown in the original paper. 
+To replicate the table with all AIC values and model coefficients (table 1 in the original paper) proved much more difficult. I actually ended up failing at the installation of the used packages (_AICcmodavg_, _MuMIn_, _sjPlots_) since my R would always crash when installing _AICcmodavg_. So I decided leave that and just kept the visual reproduction.
 
-3.  Discuss what how well the original paper meets best practice for reproducibility, i.e. what could the authors have done to make their analysis more reproducible, and what they did well.
-
-- not easy to find open data in the first place, databases with papers and corresponding datasets could be better and more papers should have openly accessible datasets
+2.  Discuss what how well the original paper meets best practice for reproducibility, i.e. what could the authors have done to make their analysis more reproducible, and what they did well.
+In general, I was impressed by the Frigerio, Didone et al. (2021) paper and how it met the best practice for reproducibility. The methods section described very clearly how data were collected and which version of R and which packages were used. The model selection process was described in detail and every coefficient that was displayed in the table belonging to "my" main results had an explanation and justification. 
+But I do think I would have struggled to replicate the table (if the packages had installed) since there was no description of which functions were used for model averaging etc. That might have made it hard to reproduce the given numbers. Since I'm not very familiar with modeling of influences of environmental factors on the timing of egg-laying, it could also be that the use of functions is obvious to anyone working in the field, but it is definitely something that would have made the reproduction much harder for me.
