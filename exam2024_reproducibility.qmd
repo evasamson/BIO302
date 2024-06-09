@@ -12,6 +12,9 @@ format:
 The paper I chose is  a paper about fledging success in greylag geese (Frigerio, D., Sumasgutner, P., Kotrschal, K. et al. From individual to population level: Temperature and snow cover modulate fledging success through breeding phenology in greylag geese (Anser anser). Sci Rep 11, 16100 (2021). https://doi.org/10.1038/s41598-021-95011-9).
 The corresponding dataset can be found under https://doi.org/10.5061/dryad.np5hqbztd (Frigerio, Didone et al. (2021). From individual to population level: Temperature and snow cover modulate fledging success through breeding phenology in Greylag geese (Anser anser) [Dataset]. Dryad. https://doi.org/10.5061/dryad.np5hqbztd).
 
+The link to my repo is the following: 
+https://github.com/evasamson/BIO302.git
+
 There are several factors evaluated (like productivity of the geese) but the main result I will try to reproduce is the relationship of the first laid egg with the predictors winter temperature and snow depth as well as the relationship between the length of the egg-laying window and the number of breeding pairs. These are presented in figure 3 in the original paper. 
 
 ```{r}
@@ -70,8 +73,6 @@ broom::augment(mod_window, interval = "confidence", level = 0.95) |>
 ```
 
 These models were chosen as main results by Frigerio, Didone et al. (2021) based on the AIC/AICc-values of all model candidates. Every model with a ΔAIC < 2 (difference to the best fit) was considered relevant and visually displayed.
-
--   include the link to your repo in your answer here.
 
 1.  Discuss how well you managed to reproduce the part of paper you were working on and what challenges you faced.
 Firstly, finding a paper that is both open-access (or accessible for me through UiB) and provides a complete dataset, was a challenge in itself. Many papers don't provide data at all and when I found datasets that seemed interesting, the corresponding paper was often behind a paywall. 
