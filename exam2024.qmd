@@ -1,0 +1,305 @@
+---
+title: "Bio302 Home Exam 2024"
+format: 
+  html:
+    self-contained: true
+    code-tools: 
+      source: true
+warning: false
+message: false
+---
+
+```{r}
+#| label: load packages
+#| include: false
+
+library(tidyverse)
+library(ggfortify)
+library(lmtest)
+library(MASS)
+library(broom)
+```
+
+## Part A - reproducibility
+
+The paper I chose is  a paper about fledging success in greylag geese (Frigerio, D., Sumasgutner, P., Kotrschal, K. et al. From individual to population level: Temperature and snow cover modulate fledging success through breeding phenology in greylag geese (Anser anser). Sci Rep 11, 16100 (2021). https://doi.org/10.1038/s41598-021-95011-9).\
+The corresponding dataset can be found under https://doi.org/10.5061/dryad.np5hqbztd (Frigerio, Didone et al. (2021). From individual to population level: Temperature and snow cover modulate fledging success through breeding phenology in Greylag geese (Anser anser) [Dataset]. Dryad. https://doi.org/10.5061/dryad.np5hqbztd).
+
+The link to my repo is the following: 
+https://github.com/evasamson/BIO302.git
+
+There are several factors evaluated (like productivity of the geese) but the main result I will try to reproduce is the relationship of the first laid egg with the predictors winter temperature and snow depth as well as the relationship between the length of the egg-laying window and the number of breeding pairs. These are presented in figure 3 in the original paper. 
+
+```{r}
+#| label: read data
+library(tidyverse)
+
+geese_data <- readxl::read_xlsx(here::here("Frigerio_Sumasgutner_et_al_Sci_Rep_Supporting_Data.xlsx"), sheet = 2) |> janitor::clean_names()
+```
+
+Figure 3a
+```{r}
+#| label: model first egg vs. temperature
+mod_temp <- lm(first_egg ~ temp_winter, data = geese_data)
+# base::plot(mod_temp)
+performance::check_model(mod_temp)
+
+broom::augment(mod_temp, interval = "confidence", level = 0.95) |> 
+  ggplot(aes(x = temp_winter, y = first_egg)) +
+  geom_point() +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = .3) +
+  geom_line(aes(y = .fitted)) +
+  labs(x = "Winter temperature [°C]", y = "1st egg laid") +
+  theme_bw()
+```
+
+Frigerio, Didone et al. (2021) used the _plot_ function in the _base_-package to examine the models for normality and homogeneity of residuals. I also examined those plots but personally prefer the condensed display by the _performance_-package so I only included those as model diagnostics.
+
+Figure 3b
+```{r}
+#| label: model first egg vs. snow depth
+mod_snow <- lm(first_egg ~ snow_average, data = geese_data)
+performance::check_model(mod_snow)
+
+broom::augment(mod_snow, interval = "confidence", level = 0.95) |> 
+  ggplot(aes(x = snow_average, y = first_egg)) +
+  geom_point() +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = .3) +
+  geom_line(aes(y = .fitted)) +
+  labs(x = "Annual snow depth [cm]", y = "1st egg laid") +
+  theme_bw()
+```
+
+Figure 3c
+```{r}
+#| label: model egg laying time window vs. number of breeding pairs
+mod_window <- lm(period ~ pairs, data = geese_data)
+performance::check_model(mod_window)
+
+broom::augment(mod_window, interval = "confidence", level = 0.95) |> 
+  ggplot(aes(x = pairs, y = period)) +
+  geom_point() +
+  geom_ribbon(aes(ymin = .lower, ymax = .upper), alpha = .3) +
+  geom_line(aes(y = .fitted)) +
+  labs(x = "Nb. breeding pairs", y = "Length egg laying time window") +
+  theme_bw()
+```
+
+These models were chosen as main results by Frigerio, Didone et al. (2021) based on the AIC/AICc-values of all model candidates. Every model with a ΔAIC < 2 (difference to the best fit) was considered relevant and visually displayed.
+
+1.  Discuss how well you managed to reproduce the part of paper you were working on and what challenges you faced.\
+Firstly, finding a paper that is both open-access (or accessible for me through UiB) and provides a complete dataset, was a challenge in itself. Many papers don't provide data at all and when I found datasets that seemed interesting, the corresponding paper was often behind a paywall. 
+After I found the paper I chose to reproduce, the figures of the main results were reproducible very well. The data didn't require any cleaning and fitting the models with the given parameters resulted in the figures also shown in the original paper. 
+To replicate the table with all AIC values and model coefficients (table 1 in the original paper) proved much more difficult. I actually ended up failing at the installation of the used packages (_AICcmodavg_, _MuMIn_, _sjPlots_) since my R would always crash when installing _AICcmodavg_. So I decided leave that and just kept the visual reproduction.
+
+2.  Discuss what how well the original paper meets best practice for reproducibility, i.e. what could the authors have done to make their analysis more reproducible, and what they did well.\
+In general, I was impressed by the Frigerio, Didone et al. (2021) paper and how it met the best practice for reproducibility. The methods section described very clearly how data were collected and which version of R and which packages were used. The model selection process was described in detail and every coefficient that was displayed in the table belonging to "my" main results had an explanation and justification. 
+But I do think I would have struggled to replicate the table (if the packages had installed) since there was no description of which functions were used for model averaging etc. That might have made it hard to reproduce the given numbers. Since I'm not very familiar with modeling of influences of environmental factors on the timing of egg-laying, it could also be that the use of functions is obvious to anyone working in the field, but it is definitely something that would have made the reproduction much harder for me.
+
+
+## Part B data analysis
+
+3.  A colleague tries to replicate a famous paper. Despite having a larger sample size, they fail to reproduce the earlier result. They submit their results for publication and receive the following response from the editor.
+
+> It seemed to me that you are arguing that the xxx et al (2004) result could be due to Type 1 (false positive) error due to small sample size.
+> However, small sample sizes result in low power, which in turn, can result in type 2 errors (or false negative results).
+> Increasing power (like you did in the current research) increases the risk of a type 1 error.
+
+The editor is right in that small sample sizes do result in low power and that low power comes with an elevated risk for type 2 errors.
+To increase power (the probability of rejecting a false null hypothesis), and thereby also decrease the type 2 error rate, several things can be done. One of them would be to raise significance levels, which inherently elevates type 1 error rates. In this case the editor would be right that increasing power increases the risk of a type 1 error.
+However, the colleague was increasing the power by upping the sample size. A larger sample size is also beneficial for avoiding type 1 errors since with small sample sizes, random variation is more likely to affect the results (e.g. towards a bigger effect size) and may cause false positives.
+
+> So your argument that xxx et al finding might be due to a type 1 error due to small sample doesn't make any sense because small samples and low power increase type 2 errors by reduce the chance of a type 1 error.
+> Thus, it seems that your focus on conducting additional studies that are higher in power is misplaced.
+
+The focus on increased sample size and higher power does in fact make sense because it both reduces the risk of type 2 errors and the risk of random variation causing a type 1 error at small sample sizes.
+
+3.1 These simulations show how power increases with sample size\
+First, make a function that will simulate data and run a t-test on them.
+```{r}
+#| label: Make a function to run a t-test
+sim_t_test <- function(n, delta, sd, ...){
+  # simulate means
+  mu <- rep(c(0, delta), each = n)
+  # add noise
+  y <- mu + rnorm(length(mu), sd = sd)
+  # predictor
+  x <- factor(rep(c("A", "B"), each = n))
+  
+  # run test
+  test <- t.test(y ~ x)
+  broom::glance(test) |> mutate(n = n, delta = delta, sd = sd)
+}
+
+sim_t_test(n = 5, delta = 1, sd = 2)
+```
+
+Then, the function is rerun with different sample sizes
+```{r}
+#| label: Rerun function with different sample sizes (n)
+# repetitions
+nrep = 100
+
+# different sample sizes
+n <- rep(seq(5, 150, 5), each = nrep)
+
+runs <- n |> 
+  map(\(x)sim_t_test(n = x, delta = 1, sd = 2)) |> 
+  list_rbind() |> 
+  mutate(sig = p.value <= 0.05)
+
+# plot
+power_plot <- runs  |> 
+  group_by(n) |> 
+  summarise(power = mean(sig)) |> 
+  ggplot(aes(x = n, y = power)) +
+  geom_smooth() + # so the line doesn't look as zig-zaggy
+  geom_point()
+
+power_plot
+```
+
+The plot shows that with increasing sample size, the power increases and the probability of a type 2 error therefore decreases. For the simulated data, the power starts to reach a plateau at around n = 125.
+
+3.2 These simulations show that type 1 errors don't increase just because the sample size (and therefore power) increases\
+To simulate the type 1 error rate, the simulation is run without an effect (delta = 0). All significant outcomes are now false positive (type 1 error).
+```{r}
+#| label: Run a t-test for type 1 error rate
+nnew <- rep(seq(5, 250, 5), each = nrep)
+
+runs_noeffect <- nnew |> 
+  map(\(x)sim_t_test(n = x, delta = 0, sd = 2)) |> 
+  list_rbind() |> 
+  mutate(sig = p.value <= 0.05)
+
+# proportion of significant trials
+proportion_sig <- runs_noeffect |> 
+  group_by(n, sig) |> 
+  count() |> 
+  pivot_wider(names_from = sig, names_prefix = "sig", values_from = nn) |> 
+  mutate(type1error = sigTRUE/sigFALSE)
+
+# plot
+type1_plot <- ggplot(aes(x = n, y = type1error), data = proportion_sig) +
+  geom_smooth() + # so the line doesn't look as zig-zaggy
+  geom_point()
+
+type1_plot
+```
+
+The plot shows that opposing to the power plot, the type 1 error rate does not have a clear trend with increasing sample size. So the increase of sample size and power does not, like the editor said, lead to a higher type 1 error rate.
+
+4.  The `lynx` data (available with-in R) show the number of lynx (norsk: gaupe) trapped in Canada in 1821-1934.
+
+First, the data are plotted.
+```{r}
+#| label: Lynx data
+lynx_data <- as_data_frame(lynx) |> 
+  mutate(year = c(1821:1934)) |> 
+  rename(number = x)
+
+lynx_plot <- ggplot(lynx_data) +
+  geom_line(aes(x = year, y = number)) +
+  theme_bw() +
+  labs(x = "Year", y = "Number of Lynx")
+
+lynx_plot
+```
+
+Then, the autocorrelation factor (ACF) and partial autocorrelation factor (PACF) are plotted.
+```{r}
+#| label: Lynx autocorrelation
+mod_lynx <- lm(number ~ year, data = lynx_data)
+
+acf(resid(mod_lynx), plot = FALSE) |> 
+  autoplot()
+
+pacf(resid(mod_lynx), plot = FALSE) |> 
+  autoplot()
+```
+From the ACF and PACF plot, I would assume that the lynx data is an autoregressive process since the ACF is exponentially declining and the PACF shows significant spikes in the first two lags (and smaller ones in following lags).
+
+A Durbin-Watson test can give further information about the autocorrelation.
+```{r}
+dwtest(mod_lynx)[1]
+```
+The Durbin-Watson test gives a value of `r dwtest(mod_lynx)[1]` (< 2), the autocorrelation is therefore positive.
+
+Fitting an autoregressive model can give the order of the autocorrelation.
+```{r}
+ar(resid(mod_lynx))[1]
+```
+The order for the lynx data autocorrelation is `r ar(resid(mod_lynx))[1]`.
+
+
+5.  Chironomid species richness in Norwegian lakes.\
+
+>Three predictor variables are available, water temperature, depth and pH. We want to test the hypothesis that species richness is related to temperature.
+What distribution could be assumed for the response variable?
+What type of analysis is appropriate?
+
+The response variable is the species richness and varies between quite low numbers and up to over 40. Assuming that there is a temperature optimum, I am using a normal distribution for the species richness. A Poisson-distribution could be used for very low species numbers but I think that at the present numbers, a normal distribution is the better choice.\
+To analyse the data, a glm is fitted test temperature as a predictor for the species number.
+
+```{r}
+chiro_data <- read_delim(here::here("chironomid.txt"))
+
+mod_chiro <- glm(noSpecies ~ temperature, data = chiro_data)
+summary(mod_chiro)
+performance::check_model(mod_chiro)
+```
+The model diagnostics alright but there are some problems. In the Posterior Predictive Check, the observed data is not always within the predicted data. The linearity of residuals and homogeneity of variance both resemble a straight line but don't converge perfectly. There are no observations with a great leverage and the residuals are normal distributed except for a little tail in the beginning.\
+To improve the fit of the model, a quadratic term can be fitted
+```{r}
+mod_chiro_quad <- glm(noSpecies ~ temperature + poly(temperature, 2), data = chiro_data)
+summary(mod_chiro_quad)
+performance::check_model(mod_chiro_quad)
+```
+The model diagnostics of the quadratic model show a better fit of the model in the Posterior Predictive Check and the Linearity of Residuals also improves. The Variance Inflation Factor stays at very low levels.
+
+The AIC confirms that the model including the quadratic term fits the data better.
+```{r}
+aic_models <- tibble(mod_chiro[["aic"]], mod_chiro_quad[["aic"]])
+aic_models
+```
+
+The fit of the linear model with the quadratic term is shown below.
+```{r}
+#| fig-cap: "Figure 1: Species richness in Norwegian lakes in relation to recorded temperature. The model includes a quadratic term and is shown with 95-percent-confidence intervals. The raw data are displayed as points in the background. Data according to the dataset _chironomid.txt_ that can be found in the github repo under https://github.com/evasamson/BIO302.git."
+
+#Creating the confidence intervals
+predictions <- augment(mod_chiro_quad, type.predict = "link", se_fit = TRUE) |> 
+  mutate(fitted = .fitted, 
+         lower = .fitted + .se.fit * 1.96,
+         upper = .fitted - .se.fit * 1.96)
+
+# Plotting the model with the data
+broom::augment(mod_chiro_quad) |> 
+  ggplot(aes(x = temperature, y = noSpecies)) +
+  geom_point(alpha = .7) +
+  geom_line(data = predictions, aes(y = fitted)) +
+  geom_ribbon(data = predictions, aes(ymin = lower, ymax = upper), alpha = .3) +
+  theme_bw() +
+  labs(x = "Temperature (°C)", y = "Number of chironomid species")
+```
+
+With the model, species richness including the confidence intervals can be predicted for different temperatures.
+```{r}
+# make new data for temperatures
+given_temps <- c(-5, 5, 50)
+chiro_newdata <- tibble(temperature = given_temps)
+
+# add new data to the model
+chiro_predictions <- predict.glm(mod_chiro_quad, newdata = chiro_newdata, type = "response", se.fit = TRUE)
+
+chiro_predictions_tbl <- tibble("temperature (°C)" = c(-5, 5, 50),
+                                predicted_richness = chiro_predictions$fit, 
+                                se_fit = chiro_predictions$se.fit,
+                                ci_lower = chiro_predictions$fit - chiro_predictions$se.fit * 1.96,
+                                ci_upper = chiro_predictions$fit + chiro_predictions$se.fit * 1.96)
+chiro_predictions_tbl
+```
+
+What does this model mean on biological level?\
+The model shows that the species richness rises with rising water temperature in Norwegian lakes. In the present data, it seems as though the optimum temperature for a high species richness is about 25 °C and the species numbers will sink again after that.\
+The predictions at different temperatures show the biological limitations of the model. This becomes most obvious, when negative species numbers are predicted, like for -5 °C and 50 °C. Logically, the species number can never sink below zero, but the fitted model will predict values according to the fit for any temperature. This means that for the span of temperatures that are present in the dataset (~0-25 °C), the model will give reasonable predictions for the species richness in the respective lake. A lake at the temperature of 5 °C will on average have a species richness of 9.3, for example. Outside of this span, predictions should be treated very cautiously, though. Since models can always only work on the data already gathered and biological processes are so complex, the predictions outside of the range of data (here 0-25 °C) don't necessarily have a biological meaning.
